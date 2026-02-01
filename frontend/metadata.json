@@ -1,0 +1,11 @@
+{
+  "name": "Maison",
+  "type": "house",
+  "value": 100,
+  "hash": "",
+  "previousOwners": [],
+  "createdAt": 0,
+  "lastTransferAt": 0,
+  "description": "Maison numérique tokenisée sur la blockchain",
+  "image": "https://via.placeholder.com/300"
+}

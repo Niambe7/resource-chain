@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>ResourceChain DApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+  <style>
+    :root {
+      --bg-1: #0b0f12;
+      --bg-2: #0f1720;
+      --panel: #121a22;
+      --panel-2: #18232f;
+      --text: #e9eef2;
+      --muted: #a9b4be;
+      --accent: #64d2ff;
+      --accent-2: #4efac6;
+      --danger: #ff6b6b;
+      --shadow: rgba(0, 0, 0, 0.4);
+      --glow: rgba(100, 210, 255, 0.25);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(600px 300px at 50% -5%, rgba(100, 210, 255, 0.15) 0%, transparent 60%),
+        radial-gradient(900px 500px at 10% -10%, #1e2a38 0%, transparent 60%),
+        radial-gradient(800px 600px at 90% 10%, #1b2430 0%, transparent 55%),
+        linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1050px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+      animation: fadeUp 0.7s ease both;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-family: "Playfair Display", serif;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      margin: 0;
+      font-size: clamp(28px, 4vw, 40px);
+      text-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .badge {
+      background: linear-gradient(135deg, var(--panel), var(--panel-2));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 14px;
+      color: var(--muted);
+      box-shadow: 0 8px 24px var(--shadow);
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      backdrop-filter: blur(6px);
+    }
+
+    .badge span {
+      color: var(--text);
+      font-weight: 600;
+      font-family: "Source Sans 3", system-ui, sans-serif;
+    }
+
+    .message {
+      margin: 12px 0 22px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: none;
+      align-items: flex-start;
+      gap: 10px;
+      box-shadow: 0 10px 30px var(--shadow);
+    }
+
+    .message.show { display: flex; }
+    .message--error { border-color: rgba(255, 107, 107, 0.6); }
+    .message--success { border-color: rgba(78, 250, 198, 0.6); }
+    .message--info { border-color: rgba(100, 210, 255, 0.6); }
+
+    .message-title {
+      font-weight: 700;
+      margin-bottom: 2px;
+      font-size: 15px;
+    }
+
+    .message-text {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    .panel {
+      background: linear-gradient(160deg, rgba(18, 26, 34, 0.92), rgba(12, 18, 24, 0.92));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 12px 30px var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::after {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      pointer-events: none;
+      mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+      -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+      mask-composite: exclude;
+      -webkit-mask-composite: xor;
+    }
+
+    .panel h2 {
+      font-family: "Playfair Display", serif;
+      font-size: 20px;
+      margin: 0 0 12px;
+      letter-spacing: 0.2px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      align-items: center;
+    }
+
+    input {
+      background: #0f151d;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(100, 210, 255, 0.15), 0 0 18px var(--glow);
+    }
+
+    button {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border: none;
+      color: #091116;
+      font-weight: 700;
+      padding: 10px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      box-shadow: 0 12px 24px rgba(78, 250, 198, 0.25);
+      font-size: 14px;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .resources {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .resource-item {
+      padding: 12px 14px;
+      background: #0f151d;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .resource-item small { color: var(--muted); }
+
+    .footer-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .helper {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .helper strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>ResourceChain</h1>
+      <div class="badge">Compte actif <span id="account"></span></div>
+    </header>
+
+    <div id="message" class="message message--info">
+      <div>
+        <div id="messageTitle" class="message-title">Info</div>
+        <div id="messageText" class="message-text">...</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Mint une ressource</h2>
+        <div class="form-row">
+          <input id="name" placeholder="Nom" />
+          <input id="type" placeholder="Type" />
+          <input id="value" placeholder="Valeur" />
+          <input id="ipfs" placeholder="Hash IPFS" />
+          <button id="mintBtn" onclick="mint()">Mint</button>
+        </div>
+        <div id="cooldownInfo" class="helper">Cooldown: <strong>--</strong></div>
+      </section>
+
+      <section class="panel">
+        <h2>Transferer une ressource</h2>
+        <div class="form-row">
+          <input id="to" placeholder="Adresse destinataire" />
+          <input id="tokenId" placeholder="Token ID" />
+          <button id="transferBtn" onclick="transfer()">Transferer</button>
+        </div>
+        <div id="lockInfo" class="helper">Verrou du token: <strong>--</strong></div>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>Mes ressources</h2>
+      <ul id="resources" class="resources"></ul>
+      <div class="footer-note">Astuce: si rien n'apparait, verifie l'adresse du contrat et le compte actif.</div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2>Historique de transferts</h2>
+      <div class="form-row" style="margin-bottom: 10px;">
+        <input id="historyTokenId" placeholder="Token ID" />
+        <button id="historyBtn" onclick="loadHistory()">Voir l'historique</button>
+      </div>
+      <ul id="historyList" class="resources"></ul>
+      <div class="footer-note">Affiche les anciens proprietaires du token.</div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
