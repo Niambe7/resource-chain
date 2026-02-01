@@ -44,6 +44,8 @@ const contractAddress = "0xC5B40840bfB5CeA396B0ED568a944D49b9fe95C9";
 Les timers affichés dans l’UI sont calculés depuis l’état on-chain.
 
 ## Tests
+1) Démarrer Ganache (réseau id 5777, port 7545).
+2) Lancer :
 ```bash
 truffle test
 ```

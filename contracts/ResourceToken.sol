@@ -54,7 +54,7 @@ contract ResourceToken is ERC721, Ownable {
     )
         public
         onlyOwner
-        cooldownPassed(to)
+        cooldownPassed(msg.sender)
     {
         require(resourceCount[to] < MAX_RESOURCES, "Limite atteinte");
 
