@@ -9,8 +9,8 @@ contract ResourceToken is ERC721, Ownable {
     uint256 public nextTokenId;
 
     uint256 public constant MAX_RESOURCES = 4;
-    uint256 public constant COOLDOWN = 5 minutes;
-    uint256 public constant LOCK_TIME = 10 minutes;
+    uint256 public constant COOLDOWN = 1 minutes;
+    uint256 public constant LOCK_TIME = 1 minutes;
 
     struct Resource {
         string name;
@@ -46,60 +46,59 @@ contract ResourceToken is ERC721, Ownable {
 
     // --- MINT ---
     function mintResource(
-        address to,
-        string memory name,
-        string memory resourceType,
-        uint256 value,
-        string memory ipfsHash
-    )
-        public
-        onlyOwner
-        cooldownPassed(msg.sender)
-    {
-        require(resourceCount[to] < MAX_RESOURCES, "Limite atteinte");
+    address to,
+    string memory name,
+    string memory resourceType,
+    uint256 value,
+    string memory ipfsHash
+)
+    public
+    onlyOwner
+    cooldownPassed(msg.sender)
+{
+    require(resourceCount[to] < MAX_RESOURCES, "Limite atteinte");
 
-        uint256 tokenId = nextTokenId;
-        nextTokenId++;
+    uint256 tokenId = nextTokenId;
+    nextTokenId++;
 
-        _safeMint(to, tokenId);
+    _safeMint(to, tokenId);
 
-        Resource storage r = resources[tokenId];
-        r.name = name;
-        r.resourceType = resourceType;
-        r.value = value;
-        r.ipfsHash = ipfsHash;
-        r.createdAt = block.timestamp;
-        r.lastTransferAt = block.timestamp;
+    Resource storage r = resources[tokenId];
+    r.name = name;
+    r.resourceType = resourceType;
+    r.value = value;
+    r.ipfsHash = ipfsHash;
+    r.createdAt = block.timestamp;
+    r.lastTransferAt = 0; 
 
-        resourceCount[to]++;
-        lastActionTime[to] = block.timestamp;
-    }
+    resourceCount[to]++;
+    lastActionTime[to] = block.timestamp;
+}
+
 
     // --- TRANSFER AVEC REGLES METIER ---
     function transferResource(address to, uint256 tokenId)
-        public
-        cooldownPassed(msg.sender)
-    {
-        require(ownerOf(tokenId) == msg.sender, "Pas proprietaire");
-        require(resourceCount[to] < MAX_RESOURCES, "Limite atteinte");
-        require(
-            block.timestamp >= resources[tokenId].lastTransferAt + LOCK_TIME,
-            "Ressource verrouillee"
-        );
+    public
+{
+    require(ownerOf(tokenId) == msg.sender, "Pas proprietaire");
+    require(resourceCount[to] < MAX_RESOURCES, "Limite atteinte");
+    require(
+        block.timestamp >= resources[tokenId].lastTransferAt + LOCK_TIME,
+        "Ressource verrouillee"
+    );
 
-        resources[tokenId].previousOwners.push(msg.sender);
-        resources[tokenId].lastTransferAt = block.timestamp;
+    resources[tokenId].previousOwners.push(msg.sender);
+    resources[tokenId].lastTransferAt = block.timestamp;
 
-        resourceCount[msg.sender]--;
-        resourceCount[to]++;
+    resourceCount[msg.sender]--;
+    resourceCount[to]++;
 
-        lastActionTime[msg.sender] = block.timestamp;
-        lastActionTime[to] = block.timestamp;
+    lastActionTime[to] = block.timestamp; // optionnel
 
-        _safeTransfer(msg.sender, to, tokenId, "");
+    _safeTransfer(msg.sender, to, tokenId, "");
 
-        emit ResourceTransferred(tokenId, msg.sender, to, block.timestamp);
-    }
+    emit ResourceTransferred(tokenId, msg.sender, to, block.timestamp);
+}
 
     function getPreviousOwners(uint256 tokenId)
         public

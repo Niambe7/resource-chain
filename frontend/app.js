@@ -1,13 +1,17 @@
 const web3 = new Web3("http://127.0.0.1:7545");
 
-const contractAddress = "0xC5B40840bfB5CeA396B0ED568a944D49b9fe95C9";
+const contractAddress = "0x6F45bD0Ab434031C8ac677a62A15f57cd9Ab5B30";
 
 let contract;
 let account;
+let accounts = [];
+let currentAccountIndex = 0;
 let chainOffset = 0;
 let isReady = false;
 let cooldownRemaining = 0;
 let lockRemaining = 0;
+let cooldownSeconds = null;
+const lastActionCache = new Map();
 
 window.onload = async () => {
   try {
@@ -18,8 +22,9 @@ window.onload = async () => {
     const abiJson = await abiResponse.json();
     const abi = abiJson.abi;
 
-    const accounts = await web3.eth.getAccounts();
-    account = accounts[0];
+    accounts = await web3.eth.getAccounts();
+    currentAccountIndex = 0;
+    account = accounts[currentAccountIndex];
 
     document.getElementById("account").innerText = account;
 
@@ -70,6 +75,7 @@ async function mint() {
         gas: 500000
       });
 
+    lastActionCache.set(account.toLowerCase(), getChainNow());
     showMessage("success", "Mint ok", "La ressource a ete mint avec succes.");
     await syncChainTime();
     await loadResources();
@@ -118,6 +124,7 @@ async function transfer() {
     const gas = await tx.estimateGas({ from: account });
     await tx.send({ from: account, gas: Math.ceil(gas * 1.2) });
 
+    lastActionCache.set(account.toLowerCase(), getChainNow());
     showMessage("success", "Transfert ok", "La ressource a ete transferee.");
     await syncChainTime();
     await loadResources();
@@ -215,6 +222,20 @@ async function loadResources() {
   updateResourceLocks();
 }
 
+async function switchAccount() {
+  if (!accounts || accounts.length < 2) {
+    showMessage("error", "Switch bloque", "Pas assez de comptes.");
+    return;
+  }
+  currentAccountIndex = currentAccountIndex === 0 ? 1 : 0;
+  account = accounts[currentAccountIndex];
+  document.getElementById("account").innerText = account;
+  showMessage("info", "Compte change", `Compte actif : ${account}`);
+  await syncChainTime();
+  await updateCooldownInfo();
+  await loadResources();
+}
+
 function setBusy(buttonId, isBusy, label) {
   const btn = document.getElementById(buttonId);
   if (!btn) return;
@@ -268,10 +289,17 @@ async function updateCooldownInfo() {
   const el = document.getElementById("cooldownInfo");
   if (!el) return;
   try {
-    const cooldown = await contract.methods.COOLDOWN().call();
-    const last = await contract.methods.lastActionTime(account).call();
+    if (cooldownSeconds === null) {
+      cooldownSeconds = Number(await contract.methods.COOLDOWN().call());
+    }
+    const key = account.toLowerCase();
+    let last = lastActionCache.get(key);
+    if (last === undefined) {
+      last = Number(await contract.methods.lastActionTime(account).call());
+      lastActionCache.set(key, last);
+    }
     const now = getChainNow();
-    cooldownRemaining = Number(last) + Number(cooldown) - now;
+    cooldownRemaining = Number(last) + Number(cooldownSeconds) - now;
     el.innerHTML = `Cooldown: <strong>${formatRemaining(cooldownRemaining)}</strong>`;
   } catch (err) {
     cooldownRemaining = 0;

@@ -233,7 +233,10 @@
   <div class="app">
     <header>
       <h1>ResourceChain</h1>
-      <div class="badge">Compte actif <span id="account"></span></div>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <div class="badge">Compte actif <span id="account"></span></div>
+        <button id="switchBtn" onclick="switchAccount()">Switcher de compte</button>
+      </div>
     </header>
 
     <div id="message" class="message message--info">
